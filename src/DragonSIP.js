@@ -1,72 +1,61 @@
-import { UserAgent, Inviter, Registerer } from 'sip.js';
+import {
+    UserAgent,
+    Registerer,
+    Inviter,
+    Invitation,
+    UserAgentDelegate,
+    UserAgentOptions
+} from "sip.js";
 
-let userAgent;
-let registerer;
-
-/**
- * Inicia o agente SIP e registra o "dragão"
- */
-export async function startSIP(username, password, onCallReceived) {
-    const uri = UserAgent.makeURI(`sip:${username}@localhost`);
-    if (!uri) {
-        throw new Error('URI inválida para o usuário SIP.');
+export class DragonSIP {
+    constructor(username, onStatusUpdate) {
+        this.username = username;
+        this.onStatusUpdate = onStatusUpdate;
+        this.server = "ws://localhost:8088/asterisk/ws";
+        this.password = "1234";
     }
 
-    userAgent = new UserAgent({
-        uri,
-        authorizationUsername: username,
-        authorizationPassword: password,
-        transportOptions: {
-            server: 'ws://localhost:5066',
-        },
-    });
+    init() {
+        const uri = UserAgent.makeURI(`sip:${this.username}@localhost`);
 
-    registerer = new Registerer(userAgent);
-
-    try {
-        await userAgent.start();
-        await registerer.register();
-
-        userAgent.delegate = {
-            onInvite: async (invitation) => {
-                if (onCallReceived) {
-                    await onCallReceived(invitation);
-                }
+        console.log(`Iniciando DragonSIP para ${this.username} com URI: ${uri.toString()}`);
+        console.log(`Servidor SIP: ${this.password}`);
+        this.userAgent = new UserAgent({
+            uri,
+            transportOptions: {
+                server: this.server,
             },
-        };
-    } catch (error) {
-        console.error('Erro ao iniciar o SIP:', error);
-        throw error;
-    }
-}
-
-/**
- * Faz uma chamada para outro dragão SIP
- */
-export async function call(targetUsername) {
-    if (!userAgent) {
-        console.error('userAgent não inicializado. Execute startSIP() primeiro.');
-        return;
-    }
-
-    const targetURI = UserAgent.makeURI(`sip:${targetUsername}@localhost`);
-    if (!targetURI) {
-        console.error('URI do alvo inválida.');
-        return;
-    }
-
-    try {
-        const inviter = new Inviter(userAgent, targetURI, {
-            sessionDescriptionHandlerOptions: {
-                constraints: {
-                    audio: true,
-                    video: false
-                }
-            }
+            authorizationUsername: this.username,
+            authorizationPassword: '1234',
         });
 
+        this.registerer = new Registerer(this.userAgent);
+
+        this.userAgent.delegate = {
+            onInvite: async (invitation) => {
+                this.onStatusUpdate("Chamada recebida");
+                await invitation.accept();
+                this.session = invitation;
+            },
+        };
+    }
+
+    async start() {
+        this.init();
+        await this.userAgent.start();
+        await this.registerer.register();
+        this.onStatusUpdate(`Registrado como ${this.username}`);
+    }
+
+    async call(target) {
+        const targetURI = UserAgent.makeURI(`sip:${target}@localhost`);
+        const inviter = new Inviter(this.userAgent, targetURI, {
+            sessionDescriptionHandlerOptions: {
+                constraints: { audio: true, video: false },
+            },
+        });
+        this.session = inviter;
         await inviter.invite();
-    } catch (error) {
-        console.error('Erro ao realizar a chamada:', error);
+        this.onStatusUpdate(`Chamando ${target}`);
     }
 }

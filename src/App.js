@@ -1,47 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { startSIP, call } from './DragonSIP';
+import React, { useState } from "react";
+import { DragonSIP } from "./DragonSIP";
 
 function App() {
-    const [target, setTarget] = useState('');
-    const [status, setStatus] = useState('🔄 Iniciando...');
+    const [dragon, setDragon] = useState("dragon1");
+    const [sip, setSip] = useState(null);
+    const [status, setStatus] = useState("Desconectado");
 
-    useEffect(() => {
-        const user = prompt('Qual dragão você é? (dragon1 ou dragon2)');
-        const targetUser = user === 'dragon1' ? 'dragon2' : 'dragon1';
+    const onStatusUpdate = (msg) => {
+        console.log("[STATUS]", msg);
+        setStatus(msg);
+    };
 
-        setTarget(targetUser);
+    const handleRegister = async () => {
+        const newSip = new DragonSIP(dragon, onStatusUpdate);
+        await newSip.start();
+        setSip(newSip);
+    };
 
-        async function init() {
-            try {
-                await startSIP(user, '1234', async (invitation) => {
-                    setStatus('Chamada recebida!');
-                    const aceitar = window.confirm('Outro dragão está chamando. Atender?');
-                    if (aceitar) {
-                        await invitation.accept({
-                            sessionDescriptionHandlerOptions: {
-                                constraints: { audio: true, video: false },
-                            },
-                        });
-                        setStatus('Em chamada');
-                    } else {
-                        await invitation.reject();
-                        setStatus('Chamada recusada');
-                    }
-                });
-
-                setStatus(` Registrado como ${user}`);
-            } catch (err) {
-                setStatus(`Erro ao iniciar: ${err.message}`);
-            }
-        }
-        init();
-    }, []);
+    const handleCall = async () => {
+        const target = dragon === "dragon1" ? "dragon2" : "dragon1";
+        await sip.call(target);
+    };
 
     return (
-        <div style={{ fontFamily: 'Arial', textAlign: 'center', paddingTop: '40px' }}>
-            <h1> Comunicação Dracônica</h1>
-            <p>Status: {status}</p>
-            <button onClick={() => call(target)}> Ligar para {target}</button>
+        <div style={{ padding: "20px", fontFamily: "Arial" }}>
+            <h2>Dragão SIP</h2>
+            <label>
+                Escolha seu dragão:
+                <select
+                    value={dragon}
+                    onChange={(e) => setDragon(e.target.value)}
+                    style={{ marginLeft: "10px" }}
+                >
+                    <option value="dragon1">dragon1</option>
+                    <option value="dragon2">dragon2</option>
+                </select>
+            </label>
+            <br /><br />
+            <button onClick={handleRegister}>Registrar</button>
+            <button onClick={handleCall} disabled={!sip}>
+                Ligar para outro dragão
+            </button>
+            <p><strong>Status:</strong> {status}</p>
         </div>
     );
 }
