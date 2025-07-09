@@ -98,8 +98,8 @@ A aplicação abrirá automaticamente no navegador em:
 
 | Dragão   | Usuário   | Senha | Extensão | Transporte |
 |----------|-----------|--------|----------|------------|
-| Dragão 1 | `dragon1` | `1234` | 1001     | WSS        |
-| Dragão 2 | `dragon2` | `1234` | 1002     | WSS        |
+| Dragão 1 | `dragon1` | `1234` | 1001     | WS        |
+| Dragão 2 | `dragon2` | `1234` | 1002     | WS        |
 
 ---
 
