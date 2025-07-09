@@ -55,8 +55,8 @@ comunicacao-draconica/
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/comunicacao-draconica.git
-cd comunicacao-draconica
+git clone https://github.com/alfaGefersona/RC28CP.git
+cd RC28CP
 ```
 
 ---
